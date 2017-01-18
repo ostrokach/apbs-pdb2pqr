@@ -40,7 +40,7 @@ include(CheckIncludeFiles)
 include(CheckFunctionExists)
 include(ExternalProject)
 
-set(APBS_VERSION "1.4.2")
+set(APBS_VERSION "1.5")
 set(PACKAGE_STRING ${APBS_VERSION})
 set(CMAKE_BUILD_TYPE "RELWITHDEBINFO")
 
@@ -205,7 +205,12 @@ if(NOT WIN32)
     list(APPEND APBS_LIBS m stdc++)
 endif()
 
-
+##########################################
+#Optionally copy MSMS/nanoshaper exectutables
+# the actual grab is later for PBSAM enable
+##########################################
+option(GET_MSMS "Put MSMS executable in the build directory" OFF)
+option(GET_NanoShaper "Put NanoShaper executable in the build directory" OFF)
 
 ################################################################################
 #Optionally build BEM: TABI-PB method                                          #
@@ -225,9 +230,10 @@ if(ENABLE_BEM)
     ExternalProject_add(
         ${TABI}
         SOURCE_DIR ${TABI_PATH}
-
-        CMAKE_ARGS -DENABLE_TABIPB_APBS=ON 
+        CMAKE_ARGS -DENABLE_TABIPB_APBS=ON -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
         BUILD_COMMAND "${CMAKE_COMMAND}" --build . --target TABIPBlib
+		#if building in Windows
+		#BUILD_COMMAND "${CMAKE_COMMAND}" --build . --config Release --target TABIPBlib
     	INSTALL_COMMAND ""
     )
 
@@ -238,33 +244,6 @@ if(ENABLE_BEM)
     include_directories(${EXTERNALS_PATH}/${TABI}/src)
 
 endif() # ENABLE_BEM
-
-
-
-##########################################
-#Optionally copy MSMS/nanoshaper exectutables
-# the actual grab is later for PBSAM enable
-##########################################
-option(GET_MSMS "Put MSMS executable in the build directory" OFF)
-option(GET_NanoShaper "Put NanoShaper executable in the build directory" OFF)
-
-################################################################################
-# Deal with MALOC                                                              #
-# Note that we depend exclusively on the MALOC that is in our external FETK    #
-# repository.  Also note, that in order for this to work on Windows, we've had #
-# to add CMake support to MALOC, and that FETK has no such support, in general.#
-################################################################################
-
-if(NOT ENABLE_FETK)
-  # We'll use autotools to build MALOC if FETK is enabled.
-  set(MALOC_ROOT ${EXTERNALS_PATH}/fetk/maloc)
-  add_subdirectory(${MALOC_ROOT})
-  include_directories(${MALOC_ROOT}/src/base ${MALOC_ROOT}/src/vsys
-    ${MALOC_ROOT}/src/vsh ${MALOC_ROOT}/src/psh)
-  list(APPEND APBS_LIB_DIRS ${EXTERNALS_PATH}/fetk/maloc/lib)
-  list(APPEND APBS_LIBS maloc)
-endif()
-
 
 
 ################################################################################
@@ -290,6 +269,23 @@ if(ENABLE_MPI)
     else()
         message(WARNING "MPI may not be enabled in debugging mode")
     endif()
+endif()
+
+################################################################################
+# Deal with MALOC                                                              #
+# Note that we depend exclusively on the MALOC that is in our external FETK    #
+# repository.  Also note, that in order for this to work on Windows, we've had #
+# to add CMake support to MALOC, and that FETK has no such support, in general.#
+################################################################################
+
+if(NOT ENABLE_FETK)
+  # We'll use autotools to build MALOC if FETK is enabled.
+  set(MALOC_ROOT ${EXTERNALS_PATH}/fetk/maloc)
+  add_subdirectory(${MALOC_ROOT})
+  include_directories(${MALOC_ROOT}/src/base ${MALOC_ROOT}/src/vsys
+    ${MALOC_ROOT}/src/vsh ${MALOC_ROOT}/src/psh)
+  list(APPEND APBS_LIB_DIRS ${EXTERNALS_PATH}/fetk/maloc/lib)
+  list(APPEND APBS_LIBS maloc)
 endif()
 
 
@@ -379,8 +375,10 @@ if(ENABLE_GEOFLOW)
   ExternalProject_Add(
     geoflow
     SOURCE_DIR ${EXTERNALS_PATH}/geoflow_c
-    CMAKE_ARGS -DENABLE_GEOFLOW_APBS=ON
+    CMAKE_ARGS -DENABLE_GEOFLOW_APBS=ON -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} 
     BUILD_COMMAND "${CMAKE_COMMAND}" --build . --target GeometricFlowLib
+    #if building in Windows
+    #BUILD_COMMAND "${CMAKE_COMMAND}" --build . --config Release --target GeometricFlowLib
     INSTALL_COMMAND ""
   )
   ExternalProject_Get_Property(geoflow binary_dir)
@@ -405,8 +403,10 @@ if(ENABLE_PBAM)
   ExternalProject_Add(
     pbam
     SOURCE_DIR ${EXTERNALS_PATH}/pb_s_am
-    CMAKE_ARGS -DENABLE_PBAM_APBS=ON
+    CMAKE_ARGS -DENABLE_PBAM_APBS=ON -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
     BUILD_COMMAND "${CMAKE_COMMAND}" --build . --target PBAMLib
+    #if building on Windows
+    #BUILD_COMMAND "${CMAKE_COMMAND}" --build . --config Release --target PBAMLib
     INSTALL_COMMAND ""
   )
   ExternalProject_Get_Property(pbam binary_dir)
@@ -437,16 +437,24 @@ if(ENABLE_PBSAM)
   include(${EXTERNALS_PATH}/pb_s_am/cmake/Summary.cmake)
 
   ExternalProject_Add(
-                      pbsam
-                      SOURCE_DIR ${EXTERNALS_PATH}/pb_s_am
-                      CMAKE_ARGS -DENABLE_PBSAM_APBS=ON
-                      BUILD_COMMAND "${CMAKE_COMMAND}" --build . --target PBSAMLib
-                      INSTALL_COMMAND ""
-                      )
+    pbsam
+    SOURCE_DIR ${EXTERNALS_PATH}/pb_s_am
+    CMAKE_ARGS -DENABLE_PBSAM_APBS=ON -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+    BUILD_COMMAND "${CMAKE_COMMAND}" --build . --target PBSAMLib
+    #if building on windows
+    #BUILD_COMMAND "${CMAKE_COMMAND}" --build . --config Release --target PBSAMLib
+    INSTALL_COMMAND ""
+    )
   ExternalProject_Get_Property(pbsam binary_dir)
   add_definitions(-DENABLE_PBSAM)
   list(APPEND APBS_LIB_DIRS "${binary_dir}/pbsam/src")
-  list(APPEND APBS_LIBS PBSAMLib ${PBSAM_LINKER_LIBS})
+
+  if(WIN32)
+	list(APPEND APBS_LIBS PBSAMLib ${PBSAM_LINKER_LIBS})
+  else()
+    list(APPEND APBS_LIBS stdc++ PBSAMLib ${PBSAM_LINKER_LIBS})
+  endif()
+
   message(STATUS "Adding in " ${PBSAM_LINKER_LIBS} )
   include_directories(${EXTERNALS_PATH}/pb_s_am/pbsam/src)
   include_directories(${EXTERNALS_PATH}/pb_s_am/pb_shared/src)
@@ -752,17 +760,19 @@ install(
         PATTERN "README"
 )
 
-install(
+if(BUILD_TOOLS)
+  install(
     DIRECTORY ${APBS_ROOT}/tools
     DESTINATION ${SHARE_INSTALL_PATH}
     PATTERN "CMakeLists.txt" EXCLUDE
-)
-
-if(NOT "${APBS_ROOT}" STREQUAL "${APBS_BUILD}")
-    install(
-        DIRECTORY ${APBS_BUILD}/tools/bin
-        DESTINATION ${SHARE_INSTALL_PATH}/tools
     )
+
+  if(NOT "${APBS_ROOT}" STREQUAL "${APBS_BUILD}")
+    install(
+      DIRECTORY ${APBS_BUILD}/tools/bin
+      DESTINATION ${SHARE_INSTALL_PATH}/tools
+      )
+  endif()
 endif()
 
 ################################################################################
