@@ -94,6 +94,7 @@ int main(
     BEMparm *bemparm = VNULL;
 #endif
     GEOFLOWparm *geoflowparm = VNULL;
+    SORparm *sorparm = VNULL;
     PBEparm *pbeparm = VNULL;
     APOLparm *apolparm = VNULL;
     Vparam *param = VNULL;

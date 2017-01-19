@@ -8,6 +8,7 @@ add_items(
     pbeparm.c
     bemparm.c
     geoflowparm.c
+    sorparm.c
     apolparm.c
     vacc.c
     valist.c
@@ -30,6 +31,7 @@ add_items(
     pbeparm.h
     bemparm.h
     geoflowparm.h
+    sorparm.h
     apolparm.h
     vacc.h
     valist.h

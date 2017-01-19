@@ -385,6 +385,7 @@ VPUBLIC NOsh_calc* NOsh_calc_ctor(
     thee->geoflowparm = VNULL;
     thee->pbamparm = VNULL;
     thee->pbsamparm = VNULL;
+    thee->sorparm = VNULL;
 
     switch (calctype) {
         case NCT_MG:
@@ -410,6 +411,9 @@ VPUBLIC NOsh_calc* NOsh_calc_ctor(
             thee->pbamparm = PBAMparm_ctor(PBAMCT_AUTO);
             thee->pbsamparm = PBSAMparm_ctor(PBSAMCT_AUTO);
             break;
+        case NCT_SOR:
+        	thee->sorparm = SORparm_ctor(SORCT_AUTO);
+        	break;
         default:
             Vnm_print(2, "NOsh_calc_ctor:  unknown calculation type (%d)!\n",
                       calctype);
@@ -1291,8 +1295,14 @@ ELEC section!\n");
             (thee->nelec)++;
             calc->pbsamparm->type = PBSAMCT_AUTO;
             return NOsh_parsePBSAM(thee, sock, calc);
-        } else {
-            Vnm_print(2, "NOsh_parseELEC: The method (\"mg\",\"fem\", \"bem\", \"geoflow\" \"pbam\", \"pbsam\") or \
+        } else if(Vstring_strcasecmp(tok, "sor") == 0){
+        	thee->elec[thee->nelec] = NOsh_calc_ctor(NCT_SOR);
+        	calc = thee->elec[thee->nelec];
+			(thee->nelec)++;
+			calc->sorparm->type = SORCT_AUTO;
+			return NOsh_parseSOR(thee, sock, calc);
+        }else {
+            Vnm_print(2, "NOsh_parseELEC: The method (\"mg\",\"fem\", \"bem\", \"geoflow\" \"pbam\", \"pbsam\", \"sor\",) or \
 \"name\" must be the first keyword in the ELEC section\n");
             return 0;
         }
@@ -1441,6 +1451,9 @@ map is used!\n");
             case NCT_GEOFLOW:
                 NOsh_setupCalcGEOFLOW(thee, elec);
                 break;
+            case NCT_SOR:
+            	NOsh_setupCalcSOR(thee, elec);
+            	break;
             default:
                 Vnm_print(2, "NOsh_setupCalc:  Invalid calculation type (%d)!\n",
                           elec->calctype);
@@ -1672,6 +1685,23 @@ VPRIVATE int NOsh_setupCalcGEOFLOW(NOsh *thee, NOsh_calc *calc) {
         return NOsh_setupCalcGEOFLOWMANUAL(thee, calc);
     }else{
         Vnm_print(2, "NOsh_setupCalcGEOFLOW:  undefined GEOFLOW calculation type (%d)!\n", parm->type);
+        return 0;
+    }
+}
+
+VPRIVATE int NOsh_setupCalcSOR(NOsh *thee, NOsh_calc *calc) {
+
+    SORparm *parm = VNULL;
+
+    VASSERT(thee != VNULL);
+    VASSERT(calc != VNULL);
+    parm = calc->sorparm;
+    VASSERT(parm != VNULL);
+
+    if(parm->type == SORCT_AUTO){
+        return NOsh_setupCalcSORAUTO(thee, calc);
+    }else{
+        Vnm_print(2, "NOsh_setupCalcSOR:  undefined SOR calculation type (%d)!\n", parm->type);
         return 0;
     }
 }
