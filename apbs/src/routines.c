@@ -5610,3 +5610,13 @@ VPUBLIC int solvePBSAM( Valist* molecules[NOSH_MAXMOL],
 }
 
 #endif
+
+VPUBLIC int solveSOR( Valist* molecules[NOSH_MAXMOL],
+                                NOsh *nosh,
+                                PBEparm *pbeparm,
+                                SORparm *parm
+                                )
+{
+	return 1;
+}
+

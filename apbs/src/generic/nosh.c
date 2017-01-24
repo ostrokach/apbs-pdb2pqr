@@ -113,6 +113,11 @@ VEXTERNC int NOsh_parsePBSAM(
                              NOsh_calc *elec
                              );
 
+VEXTERNC int NOsh_parseSOR(
+							NOsh *thee,
+							Vio *sock,
+							NOsh_calc *elec);
+
 VEXTERNC int NOsh_parseAPOL(
                            NOsh *thee,
                            Vio *sock,
@@ -170,6 +175,11 @@ VPRIVATE int NOsh_setupCalcPBSAM(
                                  NOsh_calc *elec
                                  );
 
+VPRIVATE int NOsh_setupCalcSOR(
+								NOsh *thee,
+								NOsh_calc *elec
+								);
+
 VPRIVATE int NOsh_setupCalcBEMMANUAL(
                               NOsh *thee,
                               NOsh_calc *elec
@@ -189,6 +199,11 @@ VPRIVATE int NOsh_setupCalcPBSAMAUTO(
                                      NOsh *thee,
                                      NOsh_calc *elec
                                      );
+
+VPRIVATE int NOsh_setupCalcSORAUTO(
+									NOsh *thee,
+									NOsh_calc *elec
+									);
 
 VPRIVATE int NOsh_setupCalcAPOL(
                                 NOsh *thee,
@@ -1700,7 +1715,8 @@ VPRIVATE int NOsh_setupCalcSOR(NOsh *thee, NOsh_calc *calc) {
 
     if(parm->type == SORCT_AUTO){
         return NOsh_setupCalcSORAUTO(thee, calc);
-    }else{
+    }
+    else{
         Vnm_print(2, "NOsh_setupCalcSOR:  undefined SOR calculation type (%d)!\n", parm->type);
         return 0;
     }
@@ -2864,6 +2880,56 @@ set up?\n");
     return 1;
 }
 
+VPRIVATE int NOsh_setupCalcSORAUTO(
+                                   NOsh *thee,
+                                   NOsh_calc *elec
+                                   ) {
+
+	SORparm *parm = VNULL;
+	PBEparm *pbeparm = VNULL;
+	NOsh_calc *calc = VNULL;
+
+	if (thee == VNULL) {
+		Vnm_print(2, "NOsh_setupCalcSORAUTO:  Got NULL thee!\n");
+		return 0;
+	}
+	if (elec == VNULL) {
+		Vnm_print(2, "NOsh_setupCalcSORAUTO:  Got NULL calc!\n");
+		return 0;
+	}
+	parm = elec->sorparm;
+	if (parm == VNULL) {
+		Vnm_print(2, "NOsh_setupCalcSORAUTO:  Got NULL sorparm -- was this calculation \
+	set up?\n");
+		return 0;
+	}
+	pbeparm = elec->pbeparm;
+	if (pbeparm == VNULL) {
+		Vnm_print(2, "NOsh_setupCalcSORAUTO:  Got NULL pbeparm -- was this calculation \
+	set up?\n");
+		return 0;
+	}
+
+	/* Check to see if he have any room left for this type of calculation, if
+		so: set the calculation type, update the number of calculations of this type,
+		and parse the rest of the section */
+	if (thee->ncalc >= NOSH_MAXCALC) {
+		Vnm_print(2, "NOsh:  Too many calculations in this run!\n");
+		Vnm_print(2, "NOsh:  Current max is %d; ignoring this calculation\n",
+				  NOSH_MAXCALC);
+		return 0;
+	}
+
+	/* Get the next calculation object and increment the number of calculations */
+	thee->calc[thee->ncalc] = NOsh_calc_ctor(NCT_SOR);
+	calc = thee->calc[thee->ncalc];
+	(thee->ncalc)++;
+
+	/* Copy over contents of ELEC */
+	NOsh_calc_copy(calc, elec);
+
+	return 1;
+}
 
 VPUBLIC int NOsh_parseBEM(
                          NOsh *thee,
@@ -3261,6 +3327,100 @@ VPUBLIC int NOsh_parsePBSAM(
          (PBAMparm_check(parm) == VRC_FAILURE) || 
          (!PBEparm_check(pbeparm))) {
         Vnm_print(2, "NOsh:  PBSAM parameters not set correctly!\n");
+        return 0;
+    }
+    return 1;
+}
+
+VPUBLIC int NOsh_parseSOR(
+                          NOsh *thee,
+                          Vio *sock,
+                          NOsh_calc *elec
+                          ) {
+
+    char tok[VMAX_BUFSIZE];
+    SORparm *parm = VNULL;
+    PBEparm *pbeparm = VNULL;
+    int rc;
+
+    /* Check the arguments */
+    if (thee == VNULL) {
+        Vnm_print(2, "NOsh:  Got NULL thee!\n");
+        return 0;
+    }
+    if (sock == VNULL) {
+        Vnm_print(2, "NOsh:  Got pointer to NULL socket!\n");
+        return 0;
+    }
+    if (elec == VNULL) {
+        Vnm_print(2, "NOsh:  Got pointer to NULL elec object!\n");
+        return 0;
+    }
+    parm = elec->sorparm;
+    if (parm == VNULL) {
+        Vnm_print(2, "NOsh:  Got pointer to NULL pbam object!\n");
+        return 0;
+    }
+    pbeparm = elec->pbeparm;
+    if (pbeparm == VNULL) {
+        Vnm_print(2, "NOsh:  Got pointer to NULL pbeparm object!\n");
+        return 0;
+    }
+    Vnm_print(0, "NOsh_parseSOR: Parsing parameters for SOR calculation\n");
+
+    /* Start snarfing tokens from the input stream */
+    rc = 1;
+    while (Vio_scanf(sock, "%s", tok) == 1) {
+
+        Vnm_print(0, "NOsh_parseSOR:  Parsing %s...\n", tok);
+
+        /* See if it's an END token */
+        if (Vstring_strcasecmp(tok, "end") == 0) {
+            parm->parsed = 1;
+            pbeparm->parsed = 1;
+            rc = 1;
+            break;
+        }
+
+        if (Vstring_strcasecmp(tok, "ion") == 0) {
+            Vnm_print(2, "parseSOR: WARNING! ion not implemented for SOR!\n");
+        }
+
+        /* Pass the token through a series of parsers */
+        rc = PBEparm_parseToken(pbeparm, tok, sock);
+        if (rc == -1) {
+            Vnm_print(0, "NOsh_parseSOR:  parsePBE error!\n");
+            break;
+        } else if (rc == 0) {
+             rc = SORparm_parseToken(parm, tok, sock);
+             if (rc == -1) {
+                 Vnm_print(0, "NOsh_parseSOR:  parseSOR error!\n");
+                 break;
+             } else if (rc == 0) {
+                 /* We ran out of parsers! */
+                 Vnm_print(2, "NOsh:  Unrecognized keyword: %s\n", tok);
+                 break;
+            }
+        }
+    }
+
+    pbeparm->setsrfm=1;
+    pbeparm->setsrad=1;
+    pbeparm->settemp=1; // do need temp, but have default, incase
+    pbeparm->setmolid=1; // for unneeded mol flag
+    pbeparm->setpbetype=1; // unneeded pbe type
+    pbeparm->setbcfl=1;  // unneeded bcfl
+    pbeparm->setsdens=1;
+
+
+    /* Handle various errors arising in the token-snarfing loop -- these all
+        just result in simple returns right now */
+    if (rc == -1) return 0;
+    if (rc == 0) return 0;
+
+    /* Check the status of the parameter objects */
+    if ((SORparm_check(parm) == VRC_FAILURE) || (!PBEparm_check(pbeparm))) {
+        Vnm_print(2, "NOsh:  SOR parameters not set correctly!\n");
         return 0;
     }
     return 1;

@@ -868,3 +868,16 @@ VEXTERNC int solvePBSAM(
                                 PBSAMparm *samparm
 );
 #endif
+
+/**
+ * @brief  Solve the LPBE with SOR method
+ * @ingroup  Frontend
+ * @param nosh  Object with parsed input file parameters
+ * @param pbem  PBAM objects for this calculation
+ * @param type  Type of SOR calculation
+ * @return  1 if successful, 0 otherwise */
+VPUBLIC int solveSOR( Valist* molecules[NOSH_MAXMOL],
+                                NOsh *nosh,
+                                PBEparm *pbeparm,
+                                SORparm *parm
+);

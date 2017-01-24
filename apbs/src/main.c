@@ -758,8 +758,42 @@ int main(
                 exit(2);
 #endif
 
- 		        /* Poisson-boltzmann analytical method */
-            case NCT_PBAM:
+            case NCT_SOR:
+
+            	/* What is this?  This seems like a very awkward way to find
+				   the right ELEC statement... */
+				Vnm_tprint( 1, "Made it to start\n");
+				for (k=0; k<nosh->nelec; k++) {
+					if (nosh->elec2calc[k] >= i) {
+						break;
+					}
+				}
+				 if (Vstring_strcasecmp(nosh->elecname[k], "") == 0) {
+					Vnm_tprint( 1, "CALCULATION #%d: SOR\n", i+1);
+				} else {
+					Vnm_tprint( 1, "CALCULATION #%d (%s): SOR\n",
+					i+1, nosh->elecname[k]);
+				}
+				/* Useful local variables */
+				sorparm = nosh->calc[i]->sorparm;
+				pbeparm = nosh->calc[i]->pbeparm;
+				/* Set up problem */
+				Vnm_tprint( 1, "  Setting up problem...\n");
+
+				/* Solve LPBE with SOR method */
+				if (solveSOR(alist, nosh, pbeparm, sorparm) != 1) {
+					Vnm_tprint(2, "Error solving SOR!\n");
+					VJMPERR1(0);
+				}
+				else{
+					Vnm_tprint(2, "Got this far with SOR!!");
+				}
+				fflush(stdout);
+				fflush(stderr);
+				break;
+
+            /* Poisson-boltzmann analytical method */
+			case NCT_PBAM:
 #ifdef ENABLE_PBAM
                 /* What is this?  This seems like a very awkward way to find
                 the right ELEC statement... */
