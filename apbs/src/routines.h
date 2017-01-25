@@ -797,6 +797,14 @@ VEXTERNC int forceBEM(NOsh *nosh, PBEparm *pbeparm,  BEMparm *bemparm,
 VEXTERNC void printBEMPARM(BEMparm *bemparm);
 
 /**
+ * @brief Print out SOR-specific parameters for calculation.
+ * @ingroup Frontend
+ * @author Nathan Baker
+ * @param sorparm SORparm object.
+ */
+VPUBLIC void printSORPARM(SORparm *sorparm);
+
+/**
  * @brief  Write out observables from BEM calculation to file
  * @ingroup  Frontend
  * @author  Nathan Baker

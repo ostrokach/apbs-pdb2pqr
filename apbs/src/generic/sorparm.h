@@ -70,6 +70,22 @@
 #include "generic/vstring.h"
 
 /**
+ * @brief  Centering method
+ * @ingroup SORparm
+ */
+enum eSORparm_CentMeth {
+    SMCM_POINT=0, /**< Center on a point */
+    SMCM_MOLECULE=1,  /**< Center on a molecule */
+};
+
+
+/**
+ * @brief  Declare SORparm_CentMeth type
+ * @ingroup  SORparm
+ */
+typedef enum eSORparm_CentMeth SORparm_CentMeth;
+
+/**
  * @brief  Calculation type
  * @ingroup SORparm
  */
@@ -98,9 +114,22 @@ typedef struct sSORparm {
     int parsed;  /**< Has this structure been filled? (0 = no, 1 = yes) */
 
     /* *** GENERIC PARAMETERS *** */
-    int omega;
-    int setomega;
-    double etol; /**< user defined error tolerance */
+    double omega; /**< Relaxation Parameter */
+    int setomega; /**< Relaxation Parameter parameter */
+    double etol; /**< User defined error tolerance */
+    double grid[3];  /**< Grid spacings */
+    int setgrid;  /**< Flag, @see grid */
+    double glen[3];  /**< Grid side lengths. */
+    int setglen;  /**< Flag, @see glen */
+    Vchrg_Meth chgm;  /**< Charge discretization method */
+	int setchgm;  /**< Flag, @see chgm */
+	SORparm_CentMeth cmeth;  /**< Centering method */
+	int centmol;  /**< Particular molecule on which we want to center the grid.
+	                   This should be the appropriate index in an array of molecules, not the
+	                   positive definite integer specified by the user. */
+	double center[3];  /**< Grid center. */
+	int setgcent;  /**< Flag, @see cmeth */
+	unsigned int maxiter; /**< Maximum number of iterations if error tolerance hasn't been achieved. */
 
 } SORparm;
 

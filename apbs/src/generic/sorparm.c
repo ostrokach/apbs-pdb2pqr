@@ -85,6 +85,10 @@ VPUBLIC Vrc_Codes SORparm_ctor2(SORparm *thee, SORparm_CalcType type) {
     thee->omega = 0;
     thee->setomega = 0;
     thee->etol = 1.0e-6;
+    thee->setchgm = 0;
+    thee->setgcent = 0;
+    thee->setglen = 0;
+    thee->setgrid = 0;
 
     return VRC_SUCCESS;
 }
@@ -128,11 +132,27 @@ VPUBLIC void SORparm_copy(SORparm *thee, SORparm *parm) {
     VASSERT(thee != VNULL);
     VASSERT(parm != VNULL);
 
-    thee->type = parm->type;
     thee->parsed = parm->parsed;
+    thee->type = parm->type;
 
-    thee->omega = parm->omega;
+    int i;
+    for(i=0; i<3; i++){
+    	thee->center[i] = parm->center[i];
+    	thee->glen[i] = parm->glen[i];
+    	thee->grid[i] = parm->grid[i];
+    }
+
+    thee->centmol = parm->centmol;
+    thee->chgm = parm->chgm;
+    thee->cmeth = parm->cmeth;
     thee->etol = parm->etol;
+    thee->maxiter = parm->maxiter;
+    thee->omega = parm->omega;
+    thee->setchgm = parm->setchgm;
+    thee->setglen = parm->setglen;
+    thee->setgrid = parm->setgrid;
+    thee->setomega = parm->setomega;
+
 }
 
 Vrc_Codes NOMORE(const char* name){
@@ -162,25 +182,27 @@ Vrc_Codes parsePositive(double* tf, double def, int* set, char* name, Vio* sock)
 }
 
 VPRIVATE Vrc_Codes SORparm_parseOMEGA(SORparm *thee, Vio *sock){
-    const char* name = "omega";
+
     char tok[VMAX_BUFSIZE];
-	int tf;
-    if(Vio_scanf(sock, "%s", tok) == 0) {
-        return NOMORE(name);
-    }
+	double tf;
 
+	VJMPERR1(Vio_scanf(sock, "%s", tok) == 1);
 
-    if (sscanf(tok, "%u", &tf) == 0){
-        Vnm_print(2, "NOsh:  Read non-unsigned int (%s) while parsing %s keyword!\n", tok, name);
+    if (sscanf(tok, "%lf", &tf) == 0){
+        Vnm_print(2, "NOsh:  Read non double (%s) while parsing OMEGA keyword!\n", tok);
         return VRC_WARNING;
-    }else if(tf < 0 && tf > 2){
-        Vnm_print(2, "parseSOR:  %s must be between 0 or 2!\n", name);
+    }else if(tf < 0 || tf > 2){
+        Vnm_print(2, "parseSOR: OMEGA must be between 0 or 2!\n");
         return VRC_WARNING;
     }else{
         thee->omega = tf;
     }
     thee->setomega = 1;
     return VRC_SUCCESS;
+
+    VERROR1:
+    	Vnm_print(2, "parseSOR: ran out of tokens!\n");
+    	return VRC_WARNING;
 }
 
 VPRIVATE Vrc_Codes SORparm_parseETOL(SORparm *thee, Vio *sock){
@@ -209,6 +231,191 @@ VPRIVATE Vrc_Codes SORparm_parseETOL(SORparm *thee, Vio *sock){
 
 }
 
+VPRIVATE Vrc_Codes SORparm_parseGRID(SORparm *thee, Vio *sock) {
+
+    char tok[VMAX_BUFSIZE];
+    double tf;
+
+    VJMPERR1(Vio_scanf(sock, "%s", tok) == 1);
+    if (sscanf(tok, "%lf", &tf) == 0) {
+        Vnm_print(2, "NOsh:  Read non-float (%s) while parsing GRID \
+keyword!\n", tok);
+        return VRC_WARNING;
+    } else thee->grid[0] = tf;
+    VJMPERR1(Vio_scanf(sock, "%s", tok) == 1);
+    if (sscanf(tok, "%lf", &tf) == 0) {
+        Vnm_print(2, "NOsh:  Read non-float (%s) while parsing GRID \
+keyword!\n", tok);
+        return VRC_WARNING;
+    } else thee->grid[1] = tf;
+    VJMPERR1(Vio_scanf(sock, "%s", tok) == 1);
+    if (sscanf(tok, "%lf", &tf) == 0) {
+        Vnm_print(2, "NOsh:  Read non-float (%s) while parsing GRID \
+keyword!\n", tok);
+        return VRC_WARNING;
+    } else thee->grid[2] = tf;
+    thee->setgrid = 1;
+    return VRC_SUCCESS;
+
+    VERROR1:
+        Vnm_print(2, "parseSOR:  ran out of tokens!\n");
+        return VRC_WARNING;
+}
+
+VPRIVATE Vrc_Codes SORparm_parseCHGM(SORparm *thee, Vio *sock) {
+
+    char tok[VMAX_BUFSIZE];
+    Vchrg_Meth ti;
+
+    VJMPERR1(Vio_scanf(sock, "%s", tok) == 1);
+    if (sscanf(tok, "%d", (int*)(&ti)) == 1) {
+        thee->chgm = ti;
+        thee->setchgm = 1;
+        Vnm_print(2, "NOsh:  Warning -- parsed deprecated statment \"chgm %d\".\n", ti);
+        Vnm_print(2, "NOsh:  Please use \"chgm ");
+        switch (thee->chgm) {
+            case VCM_TRIL:
+                Vnm_print(2, "spl0");
+                break;
+            case VCM_BSPL2:
+                Vnm_print(2, "spl2");
+                break;
+            case VCM_BSPL4:
+                Vnm_print(2, "spl4");
+                break;
+            default:
+                Vnm_print(2, "UNKNOWN");
+                break;
+        }
+        Vnm_print(2, "\" instead!\n");
+        return VRC_SUCCESS;
+    } else if (Vstring_strcasecmp(tok, "spl0") == 0) {
+        thee->chgm = VCM_TRIL;
+        thee->setchgm = 1;
+        return VRC_SUCCESS;
+    } else if (Vstring_strcasecmp(tok, "spl2") == 0) {
+        thee->chgm = VCM_BSPL2;
+        thee->setchgm = 1;
+        return VRC_SUCCESS;
+    } else if (Vstring_strcasecmp(tok, "spl4") == 0) {
+        thee->chgm = VCM_BSPL4;
+        thee->setchgm = 1;
+        return VRC_SUCCESS;
+    } else {
+        Vnm_print(2, "NOsh:  Unrecognized parameter (%s) when parsing \
+chgm!\n", tok);
+        return VRC_WARNING;
+    }
+    return VRC_WARNING;
+
+    VERROR1:
+        Vnm_print(2, "parseSOR:  ran out of tokens!\n");
+        return VRC_WARNING;
+}
+
+VPRIVATE Vrc_Codes SORparm_parseGCENT(SORparm *thee, Vio *sock) {
+
+    char tok[VMAX_BUFSIZE];
+    double tf;
+    int ti;
+
+    /* If the next token isn't a float, it probably means we want to
+     * center on a molecule */
+    VJMPERR1(Vio_scanf(sock, "%s", tok) == 1);
+    if (sscanf(tok, "%lf", &tf) == 0) {
+        if (Vstring_strcasecmp(tok, "mol") == 0) {
+            VJMPERR1(Vio_scanf(sock, "%s", tok) == 1);
+            if (sscanf(tok, "%d", &ti) == 0) {
+                Vnm_print(2, "NOsh:  Read non-int (%s) while parsing \
+GCENT MOL keyword!\n", tok);
+                return VRC_WARNING;
+            } else {
+                thee->cmeth = SMCM_MOLECULE;
+                /* Subtract 1 here to convert user numbering (1, 2, 3, ...) into
+                array index */
+                thee->centmol = ti - 1;
+            }
+        } else {
+            Vnm_print(2, "NOsh:  Unexpected keyword (%s) while parsing \
+GCENT!\n", tok);
+            return VRC_WARNING;
+        }
+    } else {
+        thee->center[0] = tf;
+        VJMPERR1(Vio_scanf(sock, "%s", tok) == 1);
+        if (sscanf(tok, "%lf", &tf) == 0) {
+            Vnm_print(2, "NOsh:  Read non-float (%s) while parsing \
+GCENT keyword!\n", tok);
+            return VRC_WARNING;
+        }
+        thee->center[1] = tf;
+        VJMPERR1(Vio_scanf(sock, "%s", tok) == 1);
+        if (sscanf(tok, "%lf", &tf) == 0) {
+            Vnm_print(2, "NOsh:  Read non-float (%s) while parsing \
+GCENT keyword!\n", tok);
+            return VRC_WARNING;
+        }
+        thee->center[2] = tf;
+    }
+    thee->setgcent = 1;
+    return VRC_SUCCESS;
+
+    VERROR1:
+        Vnm_print(2, "parseMG:  ran out of tokens!\n");
+        return VRC_WARNING;
+}
+
+VPRIVATE Vrc_Codes SORparm_parseGLEN(SORparm *thee, Vio *sock) {
+
+    char tok[VMAX_BUFSIZE];
+    double tf;
+
+    VJMPERR1(Vio_scanf(sock, "%s", tok) == 1);
+    if (sscanf(tok, "%lf", &tf) == 0) {
+        Vnm_print(2, "NOsh:  Read non-float (%s) while parsing GLEN \
+keyword!\n", tok);
+        return VRC_WARNING;
+    } else thee->glen[0] = tf;
+    VJMPERR1(Vio_scanf(sock, "%s", tok) == 1);
+    if (sscanf(tok, "%lf", &tf) == 0) {
+        Vnm_print(2, "NOsh:  Read non-float (%s) while parsing GLEN \
+keyword!\n", tok);
+        return VRC_WARNING;
+    } else thee->glen[1] = tf;
+    VJMPERR1(Vio_scanf(sock, "%s", tok) == 1);
+    if (sscanf(tok, "%lf", &tf) == 0) {
+        Vnm_print(2, "NOsh:  Read non-float (%s) while parsing GLEN \
+keyword!\n", tok);
+        return VRC_WARNING;
+    } else thee->glen[2] = tf;
+    thee->setglen = 1;
+    return VRC_SUCCESS;
+
+    VERROR1:
+        Vnm_print(2, "parseSOR:  ran out of tokens!\n");
+        return VRC_WARNING;
+}
+
+VPRIVATE Vrc_Codes SORparm_parseMAXITER(SORparm *thee, Vio *sock){
+
+	char tok[VMAX_BUFSIZE];
+	unsigned int tf;
+
+	VJMPERR1(Vio_scanf(sock, "%s", tok) == 1);
+	if(sscanf(tok, "%u", &tf) == 0){
+		Vnm_print(2, "NOsh: Read non-float (%s) while parsing MAXITER keyword!\n", tok);
+		return VRC_WARNING;
+	}
+	else{
+		thee->maxiter = tf;
+		return VRC_SUCCESS;
+	}
+
+	VERROR1:
+		Vnm_print(2, "parseSOR: ran out of tokens!\n");
+		return VRC_WARNING;
+}
+
 VPUBLIC Vrc_Codes SORparm_parseToken(SORparm *thee, char tok[VMAX_BUFSIZE],
   Vio *sock) {
 
@@ -225,9 +432,26 @@ VPUBLIC Vrc_Codes SORparm_parseToken(SORparm *thee, char tok[VMAX_BUFSIZE],
 
     if (Vstring_strcasecmp(tok, "omega") == 0) {
         return SORparm_parseOMEGA(thee, sock);
-    } else if(Vstring_strcasecmp(tok, "etol") == 0){
+    }
+    else if(Vstring_strcasecmp(tok, "etol") == 0){
     	return SORparm_parseETOL(thee, sock);
-    }else {
+    }
+    else if(Vstring_strcasecmp(tok, "maxiter") == 0){
+    	return SORparm_parseMAXITER(thee, sock);
+    }
+    else if(Vstring_strcasecmp(tok, "grid") == 0){
+    	return SORparm_parseGRID(thee, sock);
+    }
+    else if(Vstring_strcasecmp(tok, "chgm") == 0){
+    	return SORparm_parseCHGM(thee, sock);
+    }
+    else if(Vstring_strcasecmp(tok, "gcent") == 0){
+    	return SORparm_parseGCENT(thee, sock);
+    }
+    else if(Vstring_strcasecmp(tok, "glen") == 0){
+    	return SORparm_parseGLEN(thee, sock);
+    }
+    else {
         Vnm_print(2, "parseSOR:  Unrecognized keyword (%s)!\n", tok);
         return VRC_WARNING;
     }

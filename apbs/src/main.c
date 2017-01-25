@@ -758,11 +758,11 @@ int main(
                 exit(2);
 #endif
 
+            /* Solve PDE using SOR method */
             case NCT_SOR:
 
             	/* What is this?  This seems like a very awkward way to find
 				   the right ELEC statement... */
-				Vnm_tprint( 1, "Made it to start\n");
 				for (k=0; k<nosh->nelec; k++) {
 					if (nosh->elec2calc[k] >= i) {
 						break;
@@ -780,13 +780,17 @@ int main(
 				/* Set up problem */
 				Vnm_tprint( 1, "  Setting up problem...\n");
 
+                /* Print problem parameters */
+                printSORPARM(sorparm);
+                printPBEPARM(pbeparm);
+
 				/* Solve LPBE with SOR method */
 				if (solveSOR(alist, nosh, pbeparm, sorparm) != 1) {
 					Vnm_tprint(2, "Error solving SOR!\n");
 					VJMPERR1(0);
 				}
 				else{
-					Vnm_tprint(2, "Got this far with SOR!!");
+					Vnm_tprint(2, "Got this far with SOR!!\n");
 				}
 				fflush(stdout);
 				fflush(stderr);

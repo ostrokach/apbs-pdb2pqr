@@ -1206,6 +1206,33 @@ VPUBLIC void printMGPARM(MGparm *mgparm, double realCenter[3]) {
 
 }
 
+VPUBLIC void printSORPARM(SORparm *sorparm){
+
+	switch(sorparm->chgm){
+	case 0:
+		Vnm_tprint(1, "  Using linear spline charge discretization.\n");
+		break;
+	case 1:
+		Vnm_tprint(1, "  Using cubic spline charge discretization.\n");
+		break;
+	default:
+		break;
+	}
+	if(sorparm->type == SORCT_AUTO){
+		Vnm_tprint(1, "  Using SOR with relaxation parameter: %4.3f\n",
+				sorparm->omega);
+		Vnm_tprint(1, "  with error tolerance: %e\n",
+				sorparm->etol);
+		Vnm_tprint(1, "  and %u maximum number of iterations.\n",
+				sorparm->maxiter);
+		Vnm_tprint(1, "  Grid spacings: %4.3f x %4.3f x %4.3f\n",
+				sorparm->grid[0], sorparm->grid[1], sorparm->grid[2]);
+		Vnm_tprint(1, "  Grid lengths: %4.3f x %4.3f x %4.3f\n",
+				sorparm->glen[0], sorparm->glen[1], sorparm->glen[2]);
+
+	}
+}
+
 /**
  * Initialize a multigrid calculation.
  */

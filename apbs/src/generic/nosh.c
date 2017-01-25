@@ -471,6 +471,9 @@ VPUBLIC void NOsh_calc_dtor(
             PBAMparm_dtor(&(calc->pbamparm));
             PBSAMparm_dtor(&(calc->pbsamparm));
             break;
+        case NCT_SOR:
+        	SORparm_dtor(&(calc->sorparm));
+        	break;
         default:
             Vnm_print(2, "NOsh_calc_ctor:  unknown calculation type (%d)!\n",
                       calc->calctype);
@@ -508,6 +511,8 @@ VPUBLIC int NOsh_calc_copy(
       PBAMparm_copy(thee->pbamparm, source->pbamparm);
     if(source->pbsamparm != VNULL)
       PBSAMparm_copy(thee->pbsamparm, source->pbsamparm);
+    if(source->sorparm != VNULL)
+      SORparm_copy(thee->sorparm, source->sorparm);
 
 
     return 1;
@@ -3392,6 +3397,11 @@ VPUBLIC int NOsh_parseSOR(
             Vnm_print(0, "NOsh_parseSOR:  parsePBE error!\n");
             break;
         } else if (rc == 0) {
+        	 /* check that we are in the traditional linear model otherwise quit */
+		     if(pbeparm->pbetype != PBE_LPBE){
+		    	Vnm_print(0, "NOsh_parseSOR: SOR can only be used in the traditional linearized PBE model (lpbe).");
+		    	return 0;
+			 }
              rc = SORparm_parseToken(parm, tok, sock);
              if (rc == -1) {
                  Vnm_print(0, "NOsh_parseSOR:  parseSOR error!\n");
