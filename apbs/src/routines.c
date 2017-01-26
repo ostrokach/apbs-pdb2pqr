@@ -1477,6 +1477,93 @@ VPUBLIC int initMG(int icalc,
 
 }
 
+/**
+ * Initialize a sor calculation
+ */
+VPUBLIC int initSOR(int icalc,
+					NOsh *nosh,
+					SORparm *sorparm,
+					PBEparm *pbeparm,
+					double realCenter[3],
+					Vpbe *pbe[NOSH_MAXCALC],
+					Valist *alist[NOSH_MAXCALC],
+					Vgrid *dielXMap[NOSH_MAXCALC],
+					Vgrid *dielYMap[NOSH_MAXCALC],
+					Vgrid *dielZMap[NOSH_MAXCALC],
+					Vgrid *kappaMap[NOSH_MAXCALC],
+					Vgrid *chargeMap[NOSH_MAXCALC],
+					Vgrid *potMap[NOSH_MAXMOL],
+					Vpmg *pmg[NOSH_MAXCALC]
+					){
+
+	int j, focusFlag, iatom;
+	size_t bytesTotal, highWater;
+	double sparm, iparm, q;
+	Vatom *atom = VNULL;
+	Vgrid *theDielXMap = VNULL;
+	Vgrid *theDielYMap = VNULL;
+	Vgrid *theDielZMap = VNULL;
+	Vgrid *theKappaMap = VNULL;
+	Vgrid *thePotMap = VNULL;
+	Vgrid *theChargeMap = VNULL;
+	Valist *myalist = VNULL;
+
+	Vnm_tstart(APBS_TIMER_SETUP, "Setup timer");
+
+	/* Update the grid center */
+	for(j=0; j<3; j++) realCenter[j] = sorparm->center[j];
+
+	/* Check for completely-neutral molecule */
+	q = 0;
+	myalist = alist[pbeparm->molid-1];
+	for(iatom=0; iatom < Valist-getNumberAtoms(myalist); iatom++){
+		atom = Valist_getAtom(myalist, iatom);
+		q += VSQR(Vatom_getCharge(atom));
+	}
+
+	/* Set up PBE object */
+	Vnm_tprint(0, "Setting up PBE object...\n");
+	if(pbeparm->srfm == VSM_SPLINE){
+		sparm = pbeparm->swin;
+	}
+	else{
+		sparm = pbeparm->srad;
+	}
+
+	if(pbeparm->nion > 0){
+		iparm = pbeparm->ionr[0];
+	}
+	else{
+		iparm = 0.0;
+	}
+
+	if(pbeparm->bcfl == BCFL_FOCUS){
+		if(icalc == 0){
+			Vnm_tprint(2, "Can't focus first calculation!\n");
+			return 0;
+		}
+		focusFlag = 1;
+	}
+	else{
+		focusFlag = 0;
+	}
+
+	/* Construct Vpbe object */
+	pbe[icalc] = Vpbe_ctor(myalist, pbeparm->nion, pbeparm->ionc,
+			pbeparm->ionr, pbeparm->ionq, pbeparm->temp,
+			pbeparm->pdie, pbeparm->sdie, sparm, focusFlag,
+			pbeparm->sdens, pbeparm->zmem, pbeparm->Lmem,
+			pbeparm->mdie, pbeparm->memv);
+
+	/* Set the PDE object */
+	Vnm_tprint(0, "Setting the PDE obeject...\n");
+	switch(pbeparm->pbetype){
+	case PBE_LPBE:
+		psorp[icalc] = Vpsorp_ctor(sorparm);
+	}
+
+}
+
 VPUBLIC void killMG(NOsh *nosh, Vpbe *pbe[NOSH_MAXCALC],
                     Vpmgp *pmgp[NOSH_MAXCALC], Vpmg *pmg[NOSH_MAXCALC]) {
 
