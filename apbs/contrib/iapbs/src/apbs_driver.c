@@ -7,12 +7,12 @@
  *
  *
  */
-  
-#include "apbs.h"  
+
+#include "apbs.h"
 #include "routines.h"
-#include "generic/nosh.h"  
-#include "generic/mgparm.h"  
-#include "generic/pbeparm.h"  
+#include "generic/nosh.h"
+#include "generic/mgparm.h"
+#include "generic/pbeparm.h"
 #include "generic/femparm.h"
 #include "generic/vhal.h"
 
@@ -35,7 +35,7 @@ int apbsdrv_(
 	     int *nat,
 	     double x[NATOMS],
 	     double y[NATOMS],
-	     double z[NATOMS], 
+	     double z[NATOMS],
 	     double radius[NATOMS],
 	     double charge[NATOMS],
 	     double r_param[9],
@@ -46,9 +46,9 @@ int apbsdrv_(
 	     double glen[3],
 	     double center[3],
 	     double cglen[3],
-	     double fglen[3], 
+	     double fglen[3],
 	     double ccenter[3],
-	     double fcenter[3], 
+	     double fcenter[3],
 	     double *ofrac,
 	     int *dbg,
 	     double ionq[MAXION],
@@ -138,11 +138,11 @@ int apbsdrv_(
 
     /* ************** CHECK PARALLEL STATUS *************** */
     // init is done by the calling program
-    //    VASSERT(Vcom_init(&argc, &argv)); 
+    //    VASSERT(Vcom_init(&argc, &argv));
     com = Vcom_ctor(1);
     rank = Vcom_rank(com);
     size = Vcom_size(com);
-    startVio(); 
+    startVio();
     Vnm_setIoTag(rank, size);
     Vnm_tprint( 0, "Hello world from PE %d\n", rank);
 
@@ -177,7 +177,7 @@ int apbsdrv_(
 
 //    sock = Vio_ctor("FILE", "ASC", VNULL, input_path, "r");
 //    Vnm_tprint( 1, "Parsing input file %s...\n", input_path);
-    
+
     VASSERT( bufsize <= VMAX_BUFSIZE );
     sock = Vio_ctor("BUFF","ASC",VNULL,"0","r");
 
@@ -185,8 +185,8 @@ int apbsdrv_(
 
     /* generate input string */
     inputString = VNULL;
-    inputString = setupString(r_param, i_param, grid, dime, ionq, ionc, 
-		  ionr, glen, center, cglen, fglen, ccenter, fcenter, ofrac, 
+    inputString = setupString(r_param, i_param, grid, dime, ionq, ionc,
+		  ionr, glen, center, cglen, fglen, ccenter, fcenter, ofrac,
 		  pdime, debug);
     if(debug>2) Vnm_tprint(1, "debug: Input string:\n%s\n", inputString);
     Vio_bufTake(sock, inputString, bufsize);
@@ -195,15 +195,15 @@ int apbsdrv_(
 	Vnm_tprint( 2, "Error while parsing input string.\n");
 	VJMPERR1(0);
     } else if(debug>1) Vnm_tprint( 1, "Parsed input string.\n");
-    
+
     sock->VIObuffer = VNULL;
     Vio_dtor(&sock);
 
 
     /* *************** LOAD PARAMETERS AND MOLECULES ******************* */
     //nosh->gotparm = 0; // not using param file for now
-/*    
- * 
+/*
+ *
       param = loadParameter(nosh);
       if (loadMolecules(nosh, param, alist) != 1) {
 	Vnm_tprint(2, "Error reading molecules!\n");
@@ -331,9 +331,9 @@ int apbsdrv_(
     for (i=0; i<nosh->ncalc; i++) {
 	if(debug>1) Vnm_tprint( 1, "----------------------------------------\n");
 
-	switch (nosh->calc[i]->calctype) {  
+	switch (nosh->calc[i]->calctype) {
 	    case NCT_MG:
-		/* What is this?  This seems like a very awkward way to find 
+		/* What is this?  This seems like a very awkward way to find
 		   the right ELEC statement... */
 		for (k=0; k<nosh->nelec; k++) {
 		    if (nosh->elec2calc[k] >= i) {
@@ -343,7 +343,7 @@ int apbsdrv_(
 		if (Vstring_strcasecmp(nosh->elecname[k], "") == 0) {
 		    if(debug>1) Vnm_tprint( 1, "CALCULATION #%d: MULTIGRID\n", i+1);
 		} else {
-		    if(debug>1) Vnm_tprint( 1, "CALCULATION #%d (%s): MULTIGRID\n", 
+		    if(debug>1) Vnm_tprint( 1, "CALCULATION #%d (%s): MULTIGRID\n",
 			    i+1, nosh->elecname[k]);
 		}
 		/* Useful local variables */
@@ -353,8 +353,8 @@ int apbsdrv_(
 
 		/* Set up problem */
 		if(debug>1) Vnm_tprint( 1, "  Setting up problem...\n");
-		if (!initMG(i, nosh, mgparm, pbeparm, realCenter, pbe, 
-			    alist, dielXMap, dielYMap, dielZMap, kappaMap, chargeMap, 
+		if (!initMG(i, nosh, mgparm, pbeparm, realCenter, pbe,
+			    alist, dielXMap, dielYMap, dielZMap, kappaMap, chargeMap,
 			    pmgp, pmg, potMap)) {
 		    Vnm_tprint( 2, "Error setting up MG calculation!\n");
 		    VJMPERR1(0);
@@ -377,18 +377,18 @@ int apbsdrv_(
 		}
 
 		/* Write out energies */
-		energyMG(nosh, i, pmg[i], 
-			&(nenergy[i]), &(totEnergy[i]), &(qfEnergy[i]), 
+		energyMG(nosh, i, pmg[i],
+			&(nenergy[i]), &(totEnergy[i]), &(qfEnergy[i]),
 			&(qmEnergy[i]), &(dielEnergy[i]));
 		esenergy[0] = 0.0;
 		esenergy[0] = getElecEnergy(com, nosh, totEnergy, i);
-		
+
 		//		if(debug>3) printElecEnergy(com, nosh, totEnergy, i);
 
 		/* Write out forces */
-		forceMG(mem, nosh, pbeparm, mgparm, pmg[i], &(nforce[i]), 
+		forceMG(mem, nosh, pbeparm, mgparm, pmg[i], &(nforce[i]),
 			&(atomForce[i]), alist);
-		
+
 		//if (pbeparm->calcforce > 0 && i == nosh->ncalc-1) {
 		if (pbeparm->calcforce == PCF_TOTAL) {
 		  //		  Vnm_tprint(2, "pcf_total\n");
@@ -473,7 +473,7 @@ int apbsdrv_(
 		  writedataMG(rank, nosh, pbeparm, pmg[i]);
 		}
 		/* Return in-memeory instead */
-		else {		
+		else {
 		  for( k=0; k<pbeparm->numwrite; k++ ) {
 		    int nx = pmg[i]->pmgp->nx;
 		    int ny = pmg[i]->pmgp->ny;
@@ -544,7 +544,7 @@ int apbsdrv_(
 		/* Write matrix */
 		writematMG(rank, nosh, pbeparm, pmg[i]);
 
-		/* If needed, cache atom energies */				
+		/* If needed, cache atom energies */
 		nenergy[i] = 0;
 		if ((pbeparm->calcenergy == PCE_COMPS) && (outputformat != OUTPUT_NULL)){
 		    storeAtomEnergy(pmg[i], i, &(atomEnergy[i]), &(nenergy[i]));
@@ -595,7 +595,7 @@ int apbsdrv_(
 		printPBEPARM(pbeparm);
 
 		/* Refine mesh */
-		if (!preRefineFE(i, nosh, feparm, fetk)) {
+		if (!preRefineFE(i, feparm, fetk)) {
 		    Vnm_tprint( 2, "Error pre-refining mesh!\n");
 		    VJMPERR1(0);
 		}
@@ -609,12 +609,12 @@ int apbsdrv_(
 		Vnm_tprint(1, "  Beginning solve-estimate-refine cycle:\n");
 		for (isolve=0; isolve<feparm->maxsolve; isolve++) {
 		    Vnm_tprint(1, "    Solve #%d...\n", isolve);
-		    if (!solveFE(i, nosh, pbeparm, feparm, fetk)) {
+		    if (!solveFE(i, pbeparm, feparm, fetk)) {
 			Vnm_tprint(2, "ERROR SOLVING EQUATION!\n");
 			VJMPERR1(0);
 		    }
-		    if (!energyFE(nosh, i, fetk, &(nenergy[i]), 
-				&(totEnergy[i]), &(qfEnergy[i]), 
+		    if (!energyFE(nosh, i, fetk, &(nenergy[i]),
+				&(totEnergy[i]), &(qfEnergy[i]),
 				&(qmEnergy[i]), &(dielEnergy[i]))) {
 			Vnm_tprint(2, "ERROR SOLVING EQUATION!\n");
 			VJMPERR1(0);
@@ -622,13 +622,13 @@ int apbsdrv_(
 		    /* We're not going to refine if we've hit the max number
 		     * of solves */
 		    if (isolve < (feparm->maxsolve)-1) {
-			if (!postRefineFE(i, nosh, feparm, fetk)) break;
+			if (!postRefineFE(i, feparm, fetk)) break;
 		    }
 		    bytesTotal = Vmem_bytesTotal();
 		    highWater = Vmem_highWaterTotal();
-		    Vnm_tprint(1, "      Currently memory use:  %g MB\n", 
+		    Vnm_tprint(1, "      Currently memory use:  %g MB\n",
 			    ((double)bytesTotal/(1024.)/(1024.)));
-		    Vnm_tprint(1, "      High-water memory use:  %g MB\n", 
+		    Vnm_tprint(1, "      High-water memory use:  %g MB\n",
 			    ((double)highWater/(1024.)/(1024.)));
 		}
 
@@ -656,12 +656,12 @@ int apbsdrv_(
 		if (Vstring_strcasecmp(nosh->apolname[k], "") == 0) {
 		    if(debug>1) Vnm_tprint( 1, "CALCULATION #%d: APOLAR\n", i+1);
 		} else {
-		    if(debug>1) Vnm_tprint( 1, "CALCULATION #%d (%s): APOLAR\n", 
+		    if(debug>1) Vnm_tprint( 1, "CALCULATION #%d (%s): APOLAR\n",
 			    i+1, nosh->apolname[k]);
 		}
 
 		apolparm = nosh->calc[i]->apolparm;
-		rc = initAPOL(nosh, mem, param, apolparm, &(nforce[i]), &(atomForce[i]), 
+		rc = initAPOL(nosh, mem, param, apolparm, &(nforce[i]), &(atomForce[i]),
 			alist[(apolparm->molid)-1]);
 		if(rc == 0) {
 		    Vnm_tprint(2, "Error calculating apolar solvation quantities!\n");
@@ -682,10 +682,10 @@ int apbsdrv_(
 		    }
 		}
 		//if(debug>3) printApolEnergy(nosh, i);
-		//if(debug>3) printApolForce(com, nosh, nforce, atomForce, i); 
+		//if(debug>3) printApolForce(com, nosh, nforce, atomForce, i);
 		break;
 	    default:
-		Vnm_tprint(2, "  Unknown calculation type (%d)!\n", 
+		Vnm_tprint(2, "  Unknown calculation type (%d)!\n",
 			   nosh->calc[i]->calctype);
 		exit(2);
 	}
@@ -719,7 +719,7 @@ int apbsdrv_(
 	    Vnm_tprint( 2, "Undefined PRINT keyword!\n");
 	    break;
 	}
-    } 
+    }
     if(debug>1) Vnm_tprint( 1, "----------------------------------------\n");
 
     /* *************** HANDLE LOGGING *********************** */
@@ -734,7 +734,7 @@ int apbsdrv_(
 
     for (i=0; i<nosh->ncalc; i++) {
 	if (nenergy[i] > 0) Vmem_free(mem, nenergy[i], sizeof(double),
-		(void **)&(atomEnergy[i]));    
+		(void **)&(atomEnergy[i]));
     }
 
     /* *************** GARBAGE COLLECTION ******************* */
@@ -756,8 +756,8 @@ int apbsdrv_(
     /* Memory statistics */
     bytesTotal = Vmem_bytesTotal();
     highWater = Vmem_highWaterTotal();
-    if(debug>1) Vnm_tprint( 1, "Final memory usage:  %4.3f MB total, %4.3f MB high water\n", 
-	    (double)(bytesTotal)/(1024.*1024.), 
+    if(debug>1) Vnm_tprint( 1, "Final memory usage:  %4.3f MB total, %4.3f MB high water\n",
+	    (double)(bytesTotal)/(1024.*1024.),
 	    (double)(highWater)/(1024.*1024.));
 
     /* Clean up MALOC structures */
@@ -788,11 +788,11 @@ VERROR1:
 * @brief Creates APBS input string
 * @author Robert Konecny
 */
-char *setupString(double r_param[9], int i_param[25], double grid[3], 
+char *setupString(double r_param[9], int i_param[25], double grid[3],
 	int dime[3], double ionq[MAXION], double ionc[MAXION],
 	double ionr[MAXION], double glen[3], double center[3],
 	double cglen[3], double fglen[3],
-	double ccenter[3], double fcenter[3], double *ofrac, 
+	double ccenter[3], double fcenter[3], double *ofrac,
         int pdime[3], int debug)
 {
     static char string[MAX_BUF_SIZE];
@@ -854,14 +854,14 @@ char *setupString(double r_param[9], int i_param[25], double grid[3],
 	strcat(string,mybuf);
     }
     if (i_param[0] != 0 && i_param[3] == 0) {
-	sprintf(mybuf, "cgcent %.3f %.3f %.3f\n", 
+	sprintf(mybuf, "cgcent %.3f %.3f %.3f\n",
 		ccenter[0], ccenter[1], ccenter[2]);
 	strcat(string,mybuf);
     } else if (i_param[0] != 0 && i_param[3] == 1) {
       strcat(string, "cgcent mol 1\n");
     }
     if (i_param[0] != 0 && i_param[4] == 0) {
-	sprintf(mybuf, "fgcent %.3f %.3f %.3f\n", 
+	sprintf(mybuf, "fgcent %.3f %.3f %.3f\n",
 		fcenter[0], fcenter[1], fcenter[2]);
 	strcat(string,mybuf);
     } else if (i_param[0] != 0 && i_param[4] == 1) {
@@ -876,7 +876,7 @@ char *setupString(double r_param[9], int i_param[25], double grid[3],
     }
 
     for (i=0; i < i_param[21]; i++) {
-      sprintf(mybuf, "ion charge %.3f conc %.3f radius %.3f\n", 
+      sprintf(mybuf, "ion charge %.3f conc %.3f radius %.3f\n",
 	      ionq[i], ionc[i], ionr[i]);
       strcat(string,mybuf);
     }
@@ -897,7 +897,7 @@ temp %.3f\nsdens %.3f\nmol 1\n", r_param[0], r_param[1], r_param[2],
 	case 1: sprintf(mybuf, "npbe\n"); break;
 	case 2: sprintf(mybuf, "lrpbe\n"); break;
 	case 3: sprintf(mybuf, "nrpbe\n"); break;
-        case 4: sprintf(mybuf, "smpbe vol %.3f size %.3f\n", 
+        case 4: sprintf(mybuf, "smpbe vol %.3f size %.3f\n",
 			r_param[7], r_param[8]); break;
 	default: printf("iAPBS: PBE keyword error\n"); exit(2);
     }
@@ -1029,14 +1029,14 @@ temp %.3f\nsdens %.3f\nmol 1\n", r_param[0], r_param[1], r_param[2],
  * @author Robert Konecny
  *
  */
-//VPUBLIC double getElecEnergy(Vcom *com, NOsh *nosh, 
-double getElecEnergy(Vcom *com, NOsh *nosh, 
+//VPUBLIC double getElecEnergy(Vcom *com, NOsh *nosh,
+double getElecEnergy(Vcom *com, NOsh *nosh,
 	double totEnergy[NOSH_MAXCALC], int iprint)
 {
 
     int iarg, calcid;
     double ltenergy, gtenergy, scalar;
-    
+
     calcid = nosh->elec2calc[nosh->printcalc[iprint][0]];
     if (nosh->calc[calcid]->pbeparm->calcenergy != PCE_NO) {
 	ltenergy = Vunit_kb * (1e-3) * Vunit_Na *
@@ -1064,4 +1064,3 @@ double getElecEnergy(Vcom *com, NOsh *nosh,
     //printf("esenF %f\n", gtenergy);
     return gtenergy;
 }
-
