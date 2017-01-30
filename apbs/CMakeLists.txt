@@ -106,8 +106,11 @@ file(MAKE_DIRECTORY ${EXECUTABLE_OUTPUT_PATH}/temp)
 message(STATUS "Setting lookup paths for headers and libraries")
 
 set(CMAKE_INCLUDE_PATH "${CMAKE_INCLUDE_PATH}")
-list(APPEND CMAKE_INCLUDE_PATH /usr/include)
-list(APPEND CMAKE_INCLUDE_PATH /usr/local/include)
+# list(APPEND CMAKE_INCLUDE_PATH /usr/include)
+# list(APPEND CMAKE_INCLUDE_PATH /usr/local/include)
+# list(APPEND CMAKE_INCLUDE_PATH /opt/rh/devtoolset-4/root/usr/include)
+# list(APPEND CMAKE_INCLUDE_PATH /opt/rh/devtoolset-4/root/usr/local/include)
+include_directories(${CMAKE_INCLUDE_PATH})
 
 
 
@@ -222,27 +225,30 @@ if(ENABLE_BEM)
     message(STATUS "Building TABIPB")
     add_definitions(-DENABLE_BEM)
     set(TABI bem)
-    set(TABI_PATH ${EXTERNALS_PATH}/${TABI})
+    # set(TABI_PATH ${EXTERNALS_PATH}/${TABI})
 
-    set(GET_MSMS ON) #CACHE BOOL "Grabbing msms path"
-    set(GET_NanoShaper ON) #CACHE BOOL "Grabbing NanoShaper path"
+    # set(GET_MSMS ON) #CACHE BOOL "Grabbing msms path"
+    # set(GET_NanoShaper ON) #CACHE BOOL "Grabbing NanoShaper path"
 
-    ExternalProject_add(
-        ${TABI}
-        SOURCE_DIR ${TABI_PATH}
-        CMAKE_ARGS -DENABLE_TABIPB_APBS=ON -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-        BUILD_COMMAND "${CMAKE_COMMAND}" --build . --target TABIPBlib
-		#if building in Windows
-		#BUILD_COMMAND "${CMAKE_COMMAND}" --build . --config Release --target TABIPBlib
-    	INSTALL_COMMAND ""
-    )
+    # ExternalProject_add(
+    #     ${TABI}
+    #     SOURCE_DIR ${TABI_PATH}
+    #     CMAKE_ARGS -DENABLE_TABIPB_APBS=ON -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+    #     BUILD_COMMAND "${CMAKE_COMMAND}" --build . --target TABIPBlib
+		# #if building in Windows
+		# #BUILD_COMMAND "${CMAKE_COMMAND}" --build . --config Release --target TABIPBlib
+    # 	INSTALL_COMMAND ""
+    #   INSTALL_DIR "${CMAKE_INSTALL_PREFIX}"
+    # )
 
-    ExternalProject_Get_Property(${TABI} binary_dir)
-    list(APPEND APBS_LIB_DIRS "${binary_dir}")
+    # ExternalProject_Get_Property(${TABI} binary_dir)
+    # list(APPEND APBS_LIB_DIRS "${binary_dir}")
+    list(APPEND APBS_LIB_DIRS ${CMAKE_LIBRARY_PATH})
     list(APPEND APBS_LIBS TABIPBlib)
     include_directories(${EXTERNALS_PATH}/${TABI})
     include_directories(${EXTERNALS_PATH}/${TABI}/src)
-
+    # include_directories(${CMAKE_INCLUDE_PATH}/TABIPB/)
+    # install(FILES "${binary_dir}/libTABIPBlib.so" DESTINATION lib)
 endif() # ENABLE_BEM
 
 
@@ -319,43 +325,14 @@ if(ENABLE_FETK)
         set(MPI_ENV "FETK_MPI_INCLUDE=${MPI_C_INCLUDE_PATH}" "FETK_MPI_LIBRARY=${MPI_LIB_DIR}")
     endif()
 
-    ExternalProject_Add(fetk-maloc
-      PREFIX fetk
-      SOURCE_DIR ${EXTERNALS_PATH}/fetk/maloc/src
-      CONFIGURE_COMMAND ${MPI_ENV} ${EXTERNALS_PATH}/fetk/maloc/configure ${CONFIG_OPTS}
-      BUILD_COMMAND ${MAKE})
-
-    ExternalProject_Add(fetk-punc
-      PREFIX fetk
-      DEPENDS fetk-maloc
-      SOURCE_DIR ${EXTERNALS_PATH}/fetk/punc/src
-      CONFIGURE_COMMAND ${MPI_ENV} FETK_INCLUDE=<INSTALL_DIR>/include FETK_LIBRARY=<INSTALL_DIR>/lib ${EXTERNALS_PATH}/fetk/punc/configure ${CONFIG_OPTS}
-      BUILD_COMMAND ${MAKE})
-
-    ExternalProject_Add(fetk-gamer
-      PREFIX fetk
-      DEPENDS fetk-maloc
-      SOURCE_DIR ${EXTERNALS_PATH}/fetk/gamer/src
-      CONFIGURE_COMMAND ${MPI_ENV} FETK_INCLUDE=<INSTALL_DIR>/include FETK_LIBRARY=<INSTALL_DIR>/lib ${EXTERNALS_PATH}/fetk/gamer/configure ${CONFIG_OPTS}
-      BUILD_COMMAND ${MAKE})
-
-    ExternalProject_Add(fetk-mc
-      PREFIX fetk
-      DEPENDS fetk-maloc fetk-punc
-      SOURCE_DIR ${EXTERNALS_PATH}/fetk/mc/src
-      CONFIGURE_COMMAND ${MPI_ENV} FETK_INCLUDE=<INSTALL_DIR>/include FETK_LIBRARY=<INSTALL_DIR>/lib ${EXTERNALS_PATH}/fetk/mc/configure ${CONFIG_OPTS}
-      BUILD_COMMAND ${MAKE})
-
     set(FETK_ENABLED 1)
 
-    ExternalProject_Get_Property(fetk-maloc install_dir)
-    include_directories(${install_dir}/include)
+    include_directories(${CMAKE_INCLUDE_PATH})
+    list(APPEND APBS_LIB_DIRS ${CMAKE_LIBRARY_PATH})
+    list(APPEND APBS_LIBS maloc amd punc mc gamer superlu umfpack blas vf2c tetgen triangle
+         readline termcap)
 
-      list(APPEND APBS_LIB_DIRS "${install_dir}/lib")
-      list(APPEND APBS_LIBS maloc amd punc mc gamer superlu umfpack
-  blas vf2c tetgen triangle readline termcap)
-
-      SET(HAVE_MC_H 1)
+    SET(HAVE_MC_H 1)
     SET(HAVE_PUNC_H 1)
     SET(HAVE_BIOM_H 1)
   endif()
@@ -372,19 +349,21 @@ option(ENABLE_GEOFLOW "geoflow method" OFF)
 if(ENABLE_GEOFLOW)
   message(STATUS "Building GEOFLOW")
   add_definitions(-DGEOFLOW_APBS)
-  ExternalProject_Add(
-    geoflow
-    SOURCE_DIR ${EXTERNALS_PATH}/geoflow_c
-    CMAKE_ARGS -DENABLE_GEOFLOW_APBS=ON -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS} 
-    BUILD_COMMAND "${CMAKE_COMMAND}" --build . --target GeometricFlowLib
-    #if building in Windows
-    #BUILD_COMMAND "${CMAKE_COMMAND}" --build . --config Release --target GeometricFlowLib
-    INSTALL_COMMAND ""
-  )
-  ExternalProject_Get_Property(geoflow binary_dir)
-  add_definitions(-DENABLE_GEOFLOW)
-  list(APPEND APBS_LIB_DIRS "${binary_dir}/lib")
+  # ExternalProject_Add(
+  #   geoflow
+  #   SOURCE_DIR ${EXTERNALS_PATH}/geoflow_c
+  #   CMAKE_ARGS -DENABLE_GEOFLOW_APBS=ON -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+  #   BUILD_COMMAND "${CMAKE_COMMAND}" --build . --target GeometricFlowLib
+  #   #if building in Windows
+  #   #BUILD_COMMAND "${CMAKE_COMMAND}" --build . --config Release --target GeometricFlowLib
+  #   INSTALL_COMMAND ""
+  # )
+  # ExternalProject_Get_Property(geoflow binary_dir)
+  add_definitions(-DENABLE_GEOFLOW)  # Comment this because we want to read the header file
+  # list(APPEND APBS_LIB_DIRS "${binary_dir}/lib")
+  list(APPEND APBS_LIB_DIRS ${CMAKE_LIBRARY_PATH})
   list(APPEND APBS_LIBS GeometricFlowLib)
+  # include_directories(${CMAKE_INCLUDE_PATH}/geoflow_c)
   include_directories(${EXTERNALS_PATH}/geoflow_c/src)
 endif()
 
@@ -400,19 +379,21 @@ option(ENABLE_PBAM "pbam method" OFF)
 if(ENABLE_PBAM)
   message(STATUS "Building PBAM")
   add_definitions(-DPBAM_APBS)
-  ExternalProject_Add(
-    pbam
-    SOURCE_DIR ${EXTERNALS_PATH}/pb_s_am
-    CMAKE_ARGS -DENABLE_PBAM_APBS=ON -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-    BUILD_COMMAND "${CMAKE_COMMAND}" --build . --target PBAMLib
-    #if building on Windows
-    #BUILD_COMMAND "${CMAKE_COMMAND}" --build . --config Release --target PBAMLib
-    INSTALL_COMMAND ""
-  )
-  ExternalProject_Get_Property(pbam binary_dir)
+  # ExternalProject_Add(
+  #   pbam
+  #   SOURCE_DIR ${EXTERNALS_PATH}/pb_s_am
+  #   CMAKE_ARGS -DENABLE_PBAM_APBS=ON -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+  #   BUILD_COMMAND "${CMAKE_COMMAND}" --build . --target PBAMLib
+  #   #if building on Windows
+  #   #BUILD_COMMAND "${CMAKE_COMMAND}" --build . --config Release --target PBAMLib
+  #   INSTALL_COMMAND ""
+  # )
+  # ExternalProject_Get_Property(pbam binary_dir)
   add_definitions(-DENABLE_PBAM)
-  list(APPEND APBS_LIB_DIRS "${binary_dir}/pbam/src")
+  # list(APPEND APBS_LIB_DIRS "${binary_dir}/pbam/src")
+  list(APPEND APBS_LIB_DIRS ${CMAKE_LIBRARY_PATH})
   list(APPEND APBS_LIBS PBAMLib)
+  # include_directories(${CMAKE_INCLUDE_PATH}/PBAM)
   include_directories(${EXTERNALS_PATH}/pb_s_am/pbam/src)
   include_directories(${EXTERNALS_PATH}/pb_s_am/pb_shared/src)
   include_directories(${EXTERNALS_PATH}/pb_s_am/pb_wrap/src)
@@ -428,34 +409,37 @@ option(ENABLE_PBSAM "pbsam method" OFF)
 if(ENABLE_PBSAM)
   message(STATUS "Building PBSAM")
   add_definitions(-DPBSAM_APBS)
-  set(GET_MSMS ON) #CACHE BOOL "Grabbing msms path")
-  message(STATUS "copying msms ${GET_MSMS}")
-  
+  # set(GET_MSMS ON) #CACHE BOOL "Grabbing msms path")
+  # message(STATUS "copying msms ${GET_MSMS}")
+  #
   list(APPEND CMAKE_MODULE_PATH ${EXTERNALS_PATH}/pb_s_am/cmake/modules)
   include(${EXTERNALS_PATH}/pb_s_am/cmake/Utils.cmake)
   include(${EXTERNALS_PATH}/pb_s_am/cmake/Dependencies.cmake)
   include(${EXTERNALS_PATH}/pb_s_am/cmake/Summary.cmake)
-
-  ExternalProject_Add(
-    pbsam
-    SOURCE_DIR ${EXTERNALS_PATH}/pb_s_am
-    CMAKE_ARGS -DENABLE_PBSAM_APBS=ON -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
-    BUILD_COMMAND "${CMAKE_COMMAND}" --build . --target PBSAMLib
-    #if building on windows
-    #BUILD_COMMAND "${CMAKE_COMMAND}" --build . --config Release --target PBSAMLib
-    INSTALL_COMMAND ""
-    )
-  ExternalProject_Get_Property(pbsam binary_dir)
+  #
+  # ExternalProject_Add(
+  #   pbsam
+  #   SOURCE_DIR ${EXTERNALS_PATH}/pb_s_am
+  #   CMAKE_ARGS -DENABLE_PBSAM_APBS=ON -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS}
+  #   BUILD_COMMAND "${CMAKE_COMMAND}" --build . --target PBSAMLib
+  #   #if building on windows
+  #   #BUILD_COMMAND "${CMAKE_COMMAND}" --build . --config Release --target PBSAMLib
+  #   INSTALL_COMMAND ""
+  #   )
+  # ExternalProject_Get_Property(pbsam binary_dir)
   add_definitions(-DENABLE_PBSAM)
-  list(APPEND APBS_LIB_DIRS "${binary_dir}/pbsam/src")
-
-  if(WIN32)
-	list(APPEND APBS_LIBS PBSAMLib ${PBSAM_LINKER_LIBS})
-  else()
-    list(APPEND APBS_LIBS stdc++ PBSAMLib ${PBSAM_LINKER_LIBS})
-  endif()
-
-  message(STATUS "Adding in " ${PBSAM_LINKER_LIBS} )
+  # list(APPEND APBS_LIB_DIRS "${binary_dir}/pbsam/src")
+  #
+  # if(WIN32)
+	# list(APPEND APBS_LIBS PBSAMLib ${PBSAM_LINKER_LIBS})
+  # else()
+  #   list(APPEND APBS_LIBS stdc++ PBSAMLib ${PBSAM_LINKER_LIBS})
+  # endif()
+  #
+  # message(STATUS "Adding in " ${PBSAM_LINKER_LIBS} )
+  list(APPEND APBS_LIB_DIRS ${CMAKE_LIBRARY_PATH})
+  list(APPEND APBS_LIBS stdc++ PBSAMLib ${PBSAM_LINKER_LIBS})  # ${OpenBLAS_LIB}
+  # include_directories(${CMAKE_INCLUDE_PATH}/PBAM)
   include_directories(${EXTERNALS_PATH}/pb_s_am/pbsam/src)
   include_directories(${EXTERNALS_PATH}/pb_s_am/pb_shared/src)
   include_directories(${EXTERNALS_PATH}/pb_s_am/pb_wrap/src)
@@ -800,4 +784,4 @@ file(REMOVE_RECURSE ${EXECUTABLE_OUTPUT_PATH}/temp)
 ################################################################################
 
 #This has been deprecated and we no longer use the BUILD_PBAM option. PBAM now
-# builds with ENABLE_PBAM
+# builds with EN          
