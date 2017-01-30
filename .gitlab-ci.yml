@@ -1,0 +1,16 @@
+image: condaforge/linux-anvil:latest
+
+build:
+  stage: build
+  script:
+    - echo '  - kimlab' >> ~/.condarc
+    - echo '  - ostrokach' >> ~/.condarc
+    - ls
+    - cd $CI_PROJECT_DIR/apbs/devtools/conda-recipe
+    - conda build .
+
+test:
+  stage: test
+  script:
+    - conda install apbs
+    - cd abps/tests/
