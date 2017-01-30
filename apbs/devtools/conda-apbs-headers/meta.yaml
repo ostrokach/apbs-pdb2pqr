@@ -1,0 +1,57 @@
+{% set version = "1.5" %}
+
+package:
+  name: apbs-headers
+  version: {{ version }}
+
+source:
+  path: ../../
+
+build:
+  number: 3
+
+requirements:
+  build:
+    - cmake
+    - libgcc
+    - swig
+    - python
+    - readline
+    - ncurses
+    # - mpich
+    - fetk
+    - lapack
+    - blas
+    - openblas
+    - libgfortran
+    # - arpack
+    # - geoflow_c
+    # - tabipb
+    # - msms
+    # - openblas
+  run:
+    - libgcc
+    - python
+    - readline
+    - ncurses
+    # - mpich
+    - fetk
+    - lapack
+    - blas
+    - openblas
+    - libgfortran
+    # - arpack
+    # - geoflow_c
+    # - tabipb
+    # - msms
+    # - openblas
+
+test:
+  commands:
+    - apbs --help | grep "APBS -- Adaptive Poisson-Boltzmann Solver"
+    - apbs --version | grep "{{ version }}"
+
+about:
+  home: http://www.poissonboltzmann.org/
+  summary: Adaptive Poisson-Boltzmann Solver.
+  license: BSD
