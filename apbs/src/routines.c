@@ -5322,7 +5322,8 @@ VPUBLIC int solvePBAM( Valist* molecules[NOSH_MAXMOL],
 
           Vnm_tprint(1, "Interaction energy in kCal/mol...\n\n");
 
-          for (int i = 0; i < PBAMPARM_MAXMOL; i++) {
+          int i;
+          for (i = 0; i < PBAMPARM_MAXMOL; i++) {
               Vnm_tprint(1, "  Molecule %d: Global net ELEC energy = %1.12E\n",
                             i+1, pbamOut.energies_[i]);
               Vnm_tprint(1, "              Force = (%1.6E, %1.6E, %1.6E)\n\n",
@@ -5335,7 +5336,8 @@ VPUBLIC int solvePBAM( Valist* molecules[NOSH_MAXMOL],
 
           Vnm_tprint(1, "Interaction energy in J/mol...\n\n");
 
-          for (int i = 0; i < PBAMPARM_MAXMOL; i++) {
+          int i;
+          for (i = 0; i < PBAMPARM_MAXMOL; i++) {
               Vnm_tprint(1, "  Molecule %d: Global net ELEC energy = %1.12E\n",
                             i+1, pbamOut.energies_[i]);
               Vnm_tprint(1, "              Force = (%1.6E, %1.6E, %1.6E)\n\n",
@@ -5349,7 +5351,8 @@ VPUBLIC int solvePBAM( Valist* molecules[NOSH_MAXMOL],
 
           Vnm_tprint(1, "Interaction energy in kT @ %6.2f K...\n\n", pbamIn.temp_);
 
-          for (int i = 0; i < PBAMPARM_MAXMOL; i++) {
+          int i;
+          for (i = 0; i < PBAMPARM_MAXMOL; i++) {
               Vnm_tprint(1, "  Molecule %d: Global net ELEC energy = %1.12E\n",
                             i+1, pbamOut.energies_[i]);
               Vnm_tprint(1, "              Force = (%1.6E, %1.6E, %1.6E)\n\n",
@@ -5478,7 +5481,7 @@ VPUBLIC int solvePBSAM( Valist* molecules[NOSH_MAXMOL],
     }
   }
 
-  
+
   // SAM details
   pbsamIn.tolsp_  = samparm->tolsp;
   pbsamIn.imatct_ = samparm->imatct;
@@ -5500,12 +5503,12 @@ VPUBLIC int solvePBSAM( Valist* molecules[NOSH_MAXMOL],
   if (samparm->setmsms == 1) {
     for (i=0; i<pbamIn.nmol_; i++) {
     // find a clever way to use prefix of molecule name for msms outputs
-    for (j=0; j < VMAX_ARGLEN; j++) 
+    for (j=0; j < VMAX_ARGLEN; j++)
        if (nosh->molpath[i][j] == '\0') break;
-     
+
     // assume terminated by '.pqr' -> 4 char, want to term w/ '.xyzr'
-    char xyzr[j+2], surf[j+2], outname[j-4]; 
-    for( k=0; k < j - 4; k++) 
+    char xyzr[j+2], surf[j+2], outname[j-4];
+    for( k=0; k < j - 4; k++)
     {
         xyzr[k] = nosh->molpath[i][k];
         outname[k] = nosh->molpath[i][k];
@@ -5540,9 +5543,9 @@ VPUBLIC int solvePBSAM( Valist* molecules[NOSH_MAXMOL],
        sprintf(fname_tp, "msms -if %s -prob %f -dens %f -of %s",
                xyzr, samparm->probe_radius,samparm->density, outname);
     #endif
- 
+
       printf("%s\n", fname_tp);
- 
+
       printf("Running MSMS...\n");
       ierr = system(fname_tp);
 
@@ -5566,7 +5569,8 @@ VPUBLIC int solvePBSAM( Valist* molecules[NOSH_MAXMOL],
 
           Vnm_tprint(1, "Interaction energy in kCal/mol...\n\n");
 
-          for (int i = 0; i < PBAMPARM_MAXMOL; i++) {
+          int i;
+          for (i = 0; i < PBAMPARM_MAXMOL; i++) {
               Vnm_tprint(1, "  Molecule %d: Global net ELEC energy = %1.12E\n",
                             i+1, pbamOut.energies_[i]);
               Vnm_tprint(1, "              Force = (%1.6E, %1.6E, %1.6E)\n\n",
@@ -5579,7 +5583,8 @@ VPUBLIC int solvePBSAM( Valist* molecules[NOSH_MAXMOL],
 
           Vnm_tprint(1, "Interaction energy in J/mol...\n\n");
 
-          for (int i = 0; i < PBAMPARM_MAXMOL; i++) {
+          int i;
+          for (i = 0; i < PBAMPARM_MAXMOL; i++) {
               Vnm_tprint(1, "  Molecule %d: Global net ELEC energy = %1.12E\n",
                             i+1, pbamOut.energies_[i]);
               Vnm_tprint(1, "              Force = (%1.6E, %1.6E, %1.6E)\n\n",
@@ -5593,7 +5598,8 @@ VPUBLIC int solvePBSAM( Valist* molecules[NOSH_MAXMOL],
 
           Vnm_tprint(1, "Interaction energy in kT @ %6.2f K...\n\n", pbamIn.temp_);
 
-          for (int i = 0; i < PBAMPARM_MAXMOL; i++) {
+          int i;
+          for (i = 0; i < PBAMPARM_MAXMOL; i++) {
               Vnm_tprint(1, "  Molecule %d: Global net ELEC energy = %1.12E\n",
                             i+1, pbamOut.energies_[i]);
               Vnm_tprint(1, "              Force = (%1.6E, %1.6E, %1.6E)\n\n",
